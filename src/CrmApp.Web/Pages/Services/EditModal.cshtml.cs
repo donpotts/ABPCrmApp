@@ -1,0 +1,75 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+using CrmApp.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Volo.Abp.AspNetCore.Mvc.UI.Bootstrap.TagHelpers.Form;
+
+namespace CrmApp.Web.Pages.Services;
+
+public class EditModalModel : CrmAppPageModel
+{
+
+    [BindProperty]
+    public EditServiceViewModel Service { get; set; } = null!;
+
+    public List<SelectListItem> ServiceCategories { get; set; } = null!;
+
+    private readonly IServiceAppService _serviceAppService;
+
+    public EditModalModel(IServiceAppService serviceAppService)
+    {
+        _serviceAppService = serviceAppService;
+    }
+
+    public async Task OnGetAsync(int id)
+    {
+        var serviceDto = await _serviceAppService.GetAsync(id);
+        Service = ObjectMapper.Map<ServiceDto, EditServiceViewModel>(serviceDto);
+
+        var serviceCategoryLookup = await _serviceAppService.GetServiceCategoryLookupAsync();
+        ServiceCategories = serviceCategoryLookup.Items
+            .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+            .ToList();
+    }
+
+    public async Task<IActionResult> OnPostAsync()
+    {
+        await _serviceAppService.UpdateAsync(
+            Service.Id,
+            ObjectMapper.Map<EditServiceViewModel, CreateUpdateServiceDto>(Service)
+        );
+
+        return NoContent();
+    }
+
+    public class EditServiceViewModel
+    {
+        [HiddenInput]
+        public int Id { get; set; }
+
+ 
+        [SelectItems(nameof(ServiceCategories))]
+        [DisplayName("ServiceCategory")]
+        public int ServiceCategoryId { get; set; }
+
+ 
+        public string? Name { get; set; }
+
+ 
+        public string? Description { get; set; }
+
+ 
+        public string? Recurring { get; set; }
+
+ 
+        public string? Icon { get; set; }
+
+ 
+        public string? Notes { get; set; }
+    }
+}
